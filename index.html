@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login with Facial Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #login-container {
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        #login-container h1 {
+            margin-bottom: 20px;
+        }
+        video {
+            width: 100%;
+            max-width: 320px;
+            border-radius: 10px;
+        }
+        #error-message {
+            color: red;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-container">
+        <h1>Login with Facial Recognition</h1>
+        <video id="video" autoplay></video>
+        <button id="start-button">Start Recognition</button>
+        <p id="error-message">Face not recognized. Please try again.</p>
+    </div>
+
+    <script>
+        // Set the CompreFace API URL (use your ngrok URL here)
+        const COMPREFACE_URL = 'https://bbc4-24-248-16-227.ngrok-free.app/api/v1/recognition/recognize';
+        const videoElement = document.getElementById('video');
+        const startButton = document.getElementById('start-button');
+        const errorMessage = document.getElementById('error-message');
+
+        // Initialize video stream
+        async function startVideo() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: true
+                });
+                videoElement.srcObject = stream;
+            } catch (error) {
+                console.error("Error accessing webcam:", error);
+            }
+        }
+
+        // Start facial recognition when the user clicks the button
+        startButton.addEventListener('click', async () => {
+            const imageUrl = await captureImage();
+            recognizeFace(imageUrl);
+        });
+
+        // Capture the image from the video stream
+        function captureImage() {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            canvas.getContext('2d').drawImage(videoElement, 0, 0);
+            return canvas.toDataURL('image/jpeg');
+        }
+
+        // Send the captured image to CompreFace for recognition
+        async function recognizeFace(imageUrl) {
+            const response = await fetch(COMPREFACE_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: imageUrl })
+            });
+
+            const data = await response.json();
+            if (data && data.status === 'OK' && data.result) {
+                window.location.href = '/welcome'; // Redirect to the welcome page if face is recognized
+            } else {
+                errorMessage.style.display = 'block'; // Show error message if face is not recognized
+            }
+        }
+
+        // Initialize the webcam stream
+        startVideo();
+    </script>
+</body>
+</html>
